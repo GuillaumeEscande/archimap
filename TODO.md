@@ -1,0 +1,2 @@
+- Tester le resize et le déplacement
+- Ressource Loader pour charger toutes les images
