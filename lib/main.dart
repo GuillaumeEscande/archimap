@@ -58,7 +58,7 @@ class _InfiniteCanvasPageState extends State<InfiniteCanvasPage> {
         onScaleStart: (scaleDetails) {
           setState(() {
             if (canvasState == CanvasState.draw) {
-              points.add(offset +
+              points.add(offset -
                   (scaleDetails.focalPoint -
                           Offset(context.size!.width / 2.0,
                               context.size!.height / 2.0)) *
@@ -77,7 +77,7 @@ class _InfiniteCanvasPageState extends State<InfiniteCanvasPage> {
                 offset = lastOffset + scaleDetails.delta / scale;
               }
             } else {
-              points.add(offset +
+              points.add(offset -
                   (scaleDetails.focalPoint -
                           Offset(context.size!.width / 2.0,
                               context.size!.height / 2.0)) /
