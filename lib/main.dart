@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:flutter/material.dart' hide TextStyle;
 
 void main() {
   runApp(const MyApp());
@@ -35,7 +35,7 @@ class _InfiniteCanvasPageState extends State<InfiniteCanvasPage> {
   List<Offset> points = [];
   CanvasState canvasState = CanvasState.draw;
   Offset lastOffset = const Offset(0, 0);
-  Offset offset = const Offset(0, 0);
+  Offset offset = Offset.infinite;
   double lastScale = 1;
   double scale = 1;
 
@@ -58,7 +58,11 @@ class _InfiniteCanvasPageState extends State<InfiniteCanvasPage> {
         onScaleStart: (scaleDetails) {
           setState(() {
             if (canvasState == CanvasState.draw) {
-              points.add(scaleDetails.focalPoint - offset);
+              points.add(offset +
+                  (scaleDetails.focalPoint -
+                          Offset(context.size!.width / 2.0,
+                              context.size!.height / 2.0)) *
+                      scale);
             }
             scale = lastScale;
             offset = lastOffset;
@@ -67,10 +71,17 @@ class _InfiniteCanvasPageState extends State<InfiniteCanvasPage> {
         onScaleUpdate: (scaleDetails) {
           setState(() {
             if (canvasState == CanvasState.pan) {
-              scale = lastScale * scaleDetails.scale;
-              offset = lastOffset + scaleDetails.delta * scale;
+              if (scaleDetails.scale != 1) {
+                scale = lastScale * scaleDetails.scale;
+              } else {
+                offset = lastOffset + scaleDetails.delta / scale;
+              }
             } else {
-              points.add(scaleDetails.focalPoint - offset);
+              points.add(offset +
+                  (scaleDetails.focalPoint -
+                          Offset(context.size!.width / 2.0,
+                              context.size!.height / 2.0)) /
+                      scale);
             }
           });
         },
@@ -126,15 +137,40 @@ class CanvasCustomPainter extends CustomPainter {
     for (int x = 0; x < points.length - 1; x++) {
       //drawing line between the points to form a continuous line
       if (points[x] != Offset.infinite && points[x + 1] != Offset.infinite) {
-        canvas.drawLine((points[x] + offset).scale(scale, scale),
-            (points[x + 1] + offset).scale(scale, scale), drawingPaint);
+        canvas.drawLine(
+            (points[x] + offset).scale(scale, scale) +
+                Offset(size.width / 2.0, size.height / 2.0),
+            (points[x + 1] + offset).scale(scale, scale) +
+                Offset(size.width / 2.0, size.height / 2.0),
+            drawingPaint);
       }
       //if next point is null, means the line ends here
       else if (points[x] != Offset.infinite &&
           points[x + 1] == Offset.infinite) {
-        canvas.drawPoints(PointMode.points,
-            [(points[x] + offset).scale(scale, scale)], drawingPaint);
+        canvas.drawPoints(
+            PointMode.points,
+            [
+              (points[x] + offset).scale(scale, scale) +
+                  Offset(size.width / 2.0, size.height / 2.0)
+            ],
+            drawingPaint);
       }
+
+      // draw text
+      ParagraphStyle paragraphStyle = ParagraphStyle(textAlign: TextAlign.left);
+      ParagraphBuilder paragraphBuilder = ParagraphBuilder(paragraphStyle)
+        ..pushStyle(TextStyle(color: Colors.black))
+        ..addText(offset.toString());
+      Paragraph paragraph = paragraphBuilder.build()
+        ..layout(const ParagraphConstraints(width: 200));
+      canvas.drawParagraph(paragraph, const Offset(10, 40));
+
+      paragraphBuilder = ParagraphBuilder(paragraphStyle)
+        ..pushStyle(TextStyle(color: Colors.black))
+        ..addText(scale.toString());
+      paragraph = paragraphBuilder.build()
+        ..layout(const ParagraphConstraints(width: 200));
+      canvas.drawParagraph(paragraph, const Offset(10, 60));
     }
   }
 
